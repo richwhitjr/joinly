@@ -1,6 +1,6 @@
 [project]
 name = "llm-joinly"
-version = "0.1.0"
+version = "0.1.1"
 description = "Join two lists with the use of LLMs"
 readme = "README.md"
 requires-python = ">=3.11"
