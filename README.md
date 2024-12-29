@@ -13,6 +13,13 @@ library with:
  OPENAI_API_KEY=XXXX
 ```
 
+# Installation
+
+```
+pip install joinly
+```
+
+
 # Quickstart
 
 Let's say you have two lists of fruits.  One is a bit more specific with types of each fruit while the second
@@ -55,6 +62,7 @@ You can bring in any custom model as BaseAI with an embedding method and a promp
 ```
 from joinly.ai import BaseAI
 
+
 class MyAI(BaseAI):
     def __init__(self) -> None:
         self.client = ...
@@ -64,6 +72,7 @@ class MyAI(BaseAI):
 
     def embed(self, text: str) -> Optional[ArrayLike]:
         pass
+
 
 results = join.inner_join(left, right, context=context, llm=MyAI())
 ```
