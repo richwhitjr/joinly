@@ -83,3 +83,20 @@ class MyAI(BaseAI):
 
 results = join.inner_join(left, right, context=context, llm=MyAI())
 ```
+
+# Cost and Complexity
+
+This library leverages LLMs to perform fuzzy matching on keys. In the worst case, the complexity is O(M * N), where M is the length of one list and N is the length of the second list. This represents the most computationally expensive scenario.
+
+To mitigate complexity and reduce costs, the library uses text embeddings as a pre-filter before invoking the LLM for direct comparisons. Embeddings are computed for each item once and cached, reducing complexity to O(M + N). The cosine similarity of the embeddings is then used as a pre-filter. By default, the library calls the LLM on keyed pairs with a similarity greater than 0.6.
+
+If you expect tighter embedding similarities, you can increase this threshold using the `embedding_threshold` argument:
+
+```
+from joinly import join
+
+left = []
+right = []
+
+join.inner_join(left, right, embedding_threshold=0.9)
+```
