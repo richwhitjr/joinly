@@ -1,7 +1,7 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/python
 {
-    "name": "cookiecutter-uv-example",
+    "name": "joinly",
     // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
     "image": "mcr.microsoft.com/devcontainers/python:1-3.11-bullseye",
     "features": {},
@@ -17,8 +17,8 @@
                 "python.testing.pytestArgs": ["tests"],
                 "python.testing.unittestEnabled": false,
                 "python.testing.pytestEnabled": true,
-                "python.defaultInterpreterPath": "/workspaces/cookiecutter-uv-example/.venv/bin/python",
-                "python.testing.pytestPath": "/workspaces/cookiecutter-uv-example/.venv/bin/pytest"
+                "python.defaultInterpreterPath": "/workspaces/joinly/.venv/bin/python",
+                "python.testing.pytestPath": "/workspaces/joinly/.venv/bin/pytest"
             }
         }
     }
