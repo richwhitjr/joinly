@@ -2,7 +2,8 @@ from typing import Optional
 
 import numpy as np
 from numpy.typing import ArrayLike
-from src.common.llm import join
+
+from joinly import join
 
 
 class FakeAI(join.BaseAI):
