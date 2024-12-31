@@ -100,3 +100,18 @@ right = []
 
 join.inner_join(left, right, embedding_threshold=0.9)
 ```
+
+# Validation
+
+Often, results can be improved by performing a second pass to check the outcomes of the first pass. Joinly has a built-in function called validate that does exactly this for you. It takes the results of any joins and, when it finds a matching pair, passes it through the validator function, asking the LLM to check the answer. The resulting list provides both a True/False indicator for a match and a reason for the result.
+
+```
+from joinly import join
+
+left = []
+right = []
+
+results = join.inner_join(left, right)
+
+validation = join.validate(results)
+```

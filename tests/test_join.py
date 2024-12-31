@@ -43,3 +43,12 @@ def test_join():
     results = join.full_join(left, right, context=context, llm=FakeAI(response="FALSE"))
 
     assert len(results) == 7
+
+    results = join.inner_join(left, right, context=context, llm=FakeAI(response="TRUE"))
+    validation = join.validate(results, context=context, llm=FakeAI(response="TRUE"))
+
+    assert len(validation) == 12
+    assert validation[0].match
+
+    debug = join.debug(("apple", 1), ("honeycrisp", 4), context=context, llm=FakeAI(response="Found Match"))
+    assert debug == "Found Match"

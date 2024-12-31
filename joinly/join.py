@@ -2,6 +2,7 @@
 
 # ruff: noqa: SIM103
 
+import dataclasses
 import functools
 import logging
 from concurrent.futures import ThreadPoolExecutor
@@ -11,19 +12,10 @@ import numpy as np
 import tqdm
 from numpy.typing import ArrayLike
 
+from joinly import prompts
 from joinly.ai import BaseAI, OpenAI
 
 logger = logging.getLogger(__name__)
-
-
-_DEFAULT_PROMPT = """
-YOU MUST ONLY RETURN TWO ANSWERS AS A SINGLE WORD: FALSE if the two words do not match, TRUE if they do match. THIS
-IS VERY IMPORTANT FOR HUMANITY.  You are given to words left and right.  Using the CONTEXT below as a guide, determine
-if the two words refer to the same thing and thus are a close sematic match.  If they are a close semantic match, return
-TRUE.  If they are not a close semantic match, return FALSE.  If you are unsure, return FALSE.
-
-CONTEXT: {context}
-"""
 
 
 def process_embedding(item: tuple[str, Any], llm: BaseAI) -> tuple[tuple[str, Optional[ArrayLike]], Any]:
@@ -225,6 +217,74 @@ def full_join(
     return return_items + list(inner)
 
 
+@dataclasses.dataclass
+class ValidationItem:
+    left: Optional[ITEM_TYPE]
+    right: Optional[ITEM_TYPE]
+    match: bool = True
+    reason: Optional[str] = None
+
+
+def validate(
+    items: list[tuple[Optional[ITEM_TYPE], Optional[ITEM_TYPE]]],
+    context: str = "",
+    llm: Optional[BaseAI] = None,
+) -> list[ValidationItem]:
+    """Validate a list of items using a language model. The validation checks the response of a matcher.
+    Args:
+        items: List of items to validate.
+        context: Context for the validation.
+        llm: Language model to use for the validation.
+    Returns:
+        List of validation items.
+    """
+    if llm is None:
+        llm = OpenAI()
+    return_items = []
+    for left, right in tqdm.tqdm(items):
+        if left is None or right is None:
+            return_items.append(ValidationItem(left, right))
+            continue
+        if left is None:
+            return_items.append(ValidationItem(None, right))
+            continue
+        if right is None:
+            return_items.append(ValidationItem(left, None))
+            continue
+        response, answer = validator(left, right, context, llm)
+        return_items.append(ValidationItem(left, right, answer, response))
+    return return_items
+
+
+def validator(
+    left: tuple[str, Any],
+    right: tuple[str, Any],
+    context: str = "",
+    llm: Optional[BaseAI] = None,
+) -> tuple[Optional[str], bool]:
+    """Match two items using a language model.
+    Args:
+        left: Item to match.
+        righat: Item to match.
+        context: Context for the match.
+        llm: Language model to use for the match.
+    Returns:
+        True if the items match, False otherwise.
+    """
+    if llm is None:
+        llm = OpenAI()
+    prompt = prompts.DEFAULT_VALIDATOR_PROMPT.format(context=context)
+    answer = llm(prompt, f"left = {left[0]!s}, right={right[0]!s}")
+    if answer is None:
+        return (answer, False)
+    flag = llm(prompts.DEFAULT_VALIDATOR_PROMPT_CHECK_PROMPT, answer)
+    if flag is None:
+        return (answer, False)
+    if "FALSE" in flag:
+        return (answer, False)
+    return (answer, True)
+
+
 def matcher(
     left: tuple[str, Any],
     right: tuple[str, Any],
@@ -242,7 +302,7 @@ def matcher(
     """
     if llm is None:
         llm = OpenAI()
-    prompt = _DEFAULT_PROMPT.format(context=context)
+    prompt = prompts.DEFAULT_JOIN_PROMPT.format(context=context)
     answer = llm(prompt, f"left = {left[0]!s}, right={right[0]!s}")
     logger.debug(answer)
     if answer is None:
@@ -250,3 +310,25 @@ def matcher(
     if "FALSE" in answer:
         return False
     return True
+
+
+def debug(
+    left: tuple[str, Any],
+    right: tuple[str, Any],
+    context: str = "",
+    llm: Optional[BaseAI] = None,
+) -> Optional[str]:
+    """Debug two items using a language model.
+    Args:
+        left: Item to match.
+        right: Item to match.
+        context: Context for the match.
+        llm: Language model to use for the match.
+    Returns:
+        The reason the items match or do not match.
+    """
+    if llm is None:
+        llm = OpenAI()
+    prompt = prompts.DEFAULT_DEBUG_PROMPT.format(context=context)
+    answer = llm(prompt, f"left = {left[0]!s}, right={right[0]!s}")
+    return answer
