@@ -2,10 +2,12 @@
 
 Joinly is a library designed join two different lists of keyed values using a large language model (LLM). Like a human data annotator, you can provide context through a prompt to specify how you want the task accomplished. The library supports inner, left, right, and full joins.
 
-By default, the library uses OpenAI's GPT-4o model. To use the library, set your OpenAI credentials as follows:
+# Installation
+
+Install Joinly using pip:
 
 ```
-OPENAI_API_KEY=XXXX
+pip install joinly
 ```
 
 # Format
@@ -21,14 +23,6 @@ left: List[Tuple[str, Any]] = []
 right: List[Tuple[str, Any]] = []
 
 results: List[Tuple[Tuple[str, Any], Tuple[str, Any]]] = join.inner_join(left, right)
-```
-
-# Installation
-
-Install Joinly using pip:
-
-```
-pip install joinly
 ```
 
 # Quickstart
@@ -62,6 +56,12 @@ results = join.inner_join(left, right, context=context)
     (("apple", 1), ("grannysmith", 7)),
     (("orange", 3), ("florida orange", 5))
 ]
+```
+
+By default, the library uses OpenAI's GPT-4o model. To use the library, set your OpenAI credentials as follows:
+
+```
+OPENAI_API_KEY=XXXX
 ```
 
 # Custom LLMs
