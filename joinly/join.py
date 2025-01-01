@@ -18,6 +18,13 @@ from joinly.ai import BaseAI, OpenAI
 logger = logging.getLogger(__name__)
 
 
+ITEM_TYPE = tuple[str, Any]
+EMBED_TIME_TYPE = tuple[tuple[str, ArrayLike], Any]
+VALUE_TYPE = list[ITEM_TYPE]
+LIST_EMBED_TYPE = list[EMBED_TIME_TYPE]
+COGROUP_VALUE_TYPE = tuple[VALUE_TYPE, VALUE_TYPE]
+
+
 def process_embedding(item: tuple[str, Any], llm: BaseAI) -> tuple[tuple[str, Optional[ArrayLike]], Any]:
     text, label = item
     vec = llm.embed(text)
@@ -45,13 +52,6 @@ def embed(
 
 def _cosine(v1: ArrayLike, v2: ArrayLike) -> Any:
     return np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
-
-
-ITEM_TYPE = tuple[str, Any]
-EMBED_TIME_TYPE = tuple[tuple[str, ArrayLike], Any]
-VALUE_TYPE = list[ITEM_TYPE]
-LIST_EMBED_TYPE = list[EMBED_TIME_TYPE]
-COGROUP_VALUE_TYPE = tuple[VALUE_TYPE, VALUE_TYPE]
 
 
 def _process_embedding_pair(pair: EMBED_TIME_TYPE, context: str, llm: BaseAI) -> Optional[tuple[ITEM_TYPE, ITEM_TYPE]]:
@@ -225,6 +225,12 @@ class ValidationItem:
     reason: Optional[str] = None
 
 
+def _process_validate(pair: tuple[ITEM_TYPE, ITEM_TYPE], context: str, llm: BaseAI) -> ValidationItem:
+    (lk, lv), (rk, rv) = pair
+    response, answer = validator((lk, lv), (rk, rv), context, llm)
+    return ValidationItem((lk, lv), (rk, rv), answer, response)
+
+
 def validate(
     items: list[tuple[Optional[ITEM_TYPE], Optional[ITEM_TYPE]]],
     context: str = "",
@@ -240,20 +246,28 @@ def validate(
     """
     if llm is None:
         llm = OpenAI()
-    return_items = []
-    for left, right in tqdm.tqdm(items):
-        if left is None or right is None:
-            return_items.append(ValidationItem(left, right))
-            continue
-        if left is None:
-            return_items.append(ValidationItem(None, right))
-            continue
-        if right is None:
-            return_items.append(ValidationItem(left, None))
-            continue
-        response, answer = validator(left, right, context, llm)
-        return_items.append(ValidationItem(left, right, answer, response))
-    return return_items
+    process_func = functools.partial(_process_validate, context=context, llm=llm)
+    with ThreadPoolExecutor() as executor:
+        futures = []
+        return_items = []
+        for left, right in tqdm.tqdm(items):
+            if left is None or right is None:
+                return_items.append(ValidationItem(left, right))
+                continue
+            if left is None:
+                return_items.append(ValidationItem(None, right))
+                continue
+            if right is None:
+                return_items.append(ValidationItem(left, None))
+                continue
+            future = executor.submit(process_func, (left, right))
+            futures.append(future)
+
+        for future in tqdm.tqdm(futures):
+            result = future.result()
+            return_items.append(result)
+
+        return return_items
 
 
 def validator(
